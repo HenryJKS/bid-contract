@@ -3,8 +3,8 @@ const Web3 = require("web3");
 const compiledMyToken = require("./build/Challenge.json");
 
 const provider = new HDWalletProvider (
-    'addict fancy panda couple humor document ritual waste trade reason okay chair',
-    'https://sepolia.infura.io/v3/95ecc47bd5a44b5a8e7985400b4e0b73'
+    process.env.MNEMONIC,
+    process.env.API_INFURA
 );
 
 const web3 = new Web3(provider);
