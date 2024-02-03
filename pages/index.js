@@ -7,12 +7,14 @@ import {
   FormField,
   Divider,
   Button,
+  Modal
 } from "semantic-ui-react";
 import bid from "../ethereum/bid";
 import Layout from "../components/Layout";
 import WalletButton from "../components/ButtonWeb3";
 import { web3 } from "../components/ButtonWeb3";
 import { Router } from "../routes";
+import { getRedirectError } from "next/dist/client/components/redirect";
 
 class bidIndex extends Component {
   state = {
@@ -21,6 +23,8 @@ class bidIndex extends Component {
     errorMessage: "",
     errorMessageTransfer: "",
     loadingButtonTransfer: false,
+    successTransfer: "",
+    successBid: ""
   };
 
   static async getInitialProps(props) {
@@ -44,13 +48,15 @@ class bidIndex extends Component {
     const bidToken = bid(this.props.address);
     const accounts = await web3.eth.getAccounts();
 
-    this.setState({ loadingButton: true, errorMessage: "" });
+    this.setState({ loadingButton: true, errorMessage: ""});
     try {
       await bidToken.methods.Bid().send({
         from: accounts[0],
         value: web3.utils.toWei(this.state.quantityETH, "ether"),
       });
+      this.setState({ loadingButton: false})
       Router.pushRoute("/");
+      this.setState({ successBid: "Lance realizado com sucesso!"});
     } catch (error) {
       if (error.message.includes("revert")) {
         this.setState({
@@ -58,7 +64,7 @@ class bidIndex extends Component {
           errorMessage: error.message.split("revert")[1].trim(),
         });
       } else {
-        this.setState({ loadingButton: false, errorMessage: error.message });
+        this.setState({ loadingButton: false, errorMessage: error.message});
       }
     }
   };
@@ -69,12 +75,14 @@ class bidIndex extends Component {
     const bidToken = bid(this.props.address);
     const accounts = await web3.eth.getAccounts();
 
-    this.setState({ loadingButtonTransfer: true, errorMessage: "" });
+    this.setState({ loadingButtonTransfer: true, errorMessage: ""});
     try {
       await bidToken.methods.Tranferfunds().send({
         from: accounts[0],
       });
+      this.setState({ loadingButtonTransfer: false})
       Router.pushRoute("/");
+      this.setState({ successTransfer: "Transferência realizada com sucesso!"});
     } catch (error) {
       if (error.message.includes("revert")) {
         this.setState({
@@ -108,7 +116,7 @@ class bidIndex extends Component {
         <Divider horizontal>Bid</Divider>
 
         <Message compact info>
-          <MessageHeader>Saldo do Contrato</MessageHeader>
+          <MessageHeader>Lance Atual</MessageHeader>
           <p>{this.props.balanceContractETH} ETH</p>
         </Message>
 
@@ -133,6 +141,17 @@ class bidIndex extends Component {
             />
           </FormField>
           <FormField>
+            <Modal
+              open={!!this.state.successBid}
+              header="Lance realizado com sucesso!"
+              content="Obrigado por participar!"
+              actions={["OK"]}
+              onActionClick={() => this.setState({ successBid: "" })}
+              size="small"
+              style={{color: "green"}}
+            />
+          </FormField>
+          <FormField>
             <Button
               type="submit"
               className="ui button primary"
@@ -143,13 +162,12 @@ class bidIndex extends Component {
           </FormField>
         </Form>
         <Divider horizontal>Winner</Divider>
-        <Form>
+        <Form onClick={this.onSubmitTransfer} error={!!this.state.errorMessageTransfer}>
           <FormField>
             <Button
               type="submit"
               className="ui button primary"
               loading={this.state.loadingButtonTransfer}
-              onClick={this.onSubmitTransfer}
               content="Transferir"
             />
           </FormField>
@@ -159,6 +177,17 @@ class bidIndex extends Component {
               compact
               error
               content={this.state.errorMessageTransfer}
+            />
+          </FormField>
+          <FormField>
+            <Modal
+              open={!!this.state.successTransfer}
+              header="Transferência realizada com sucesso!"
+              content="O vencedor recebeu o valor do lance."
+              actions={["OK"]}
+              onActionClick={() => this.setState({ successTransfer: "" })}
+              size="small"
+              style={{color: "green"}}
             />
           </FormField>
         </Form>
