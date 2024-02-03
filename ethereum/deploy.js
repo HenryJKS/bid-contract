@@ -1,6 +1,9 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 const Web3 = require("web3");
 const compiledMyToken = require("./build/Challenge.json");
+require('dotenv').config(
+    {path: '../.env'}
+);
 
 const provider = new HDWalletProvider (
     process.env.MNEMONIC,
@@ -16,7 +19,7 @@ const deploy = async () => {
 
     const result = await new web3.eth.Contract(compiledMyToken.abi)
         .deploy({ data: compiledMyToken.evm.bytecode.object})
-        .send({ gas: "2000000", from: accounts[0] })
+        .send({ gas: "1000000", from: accounts[0] })
         .catch(err => console.error(err));
 
     console.log("Contract deployed to", result.options.address);

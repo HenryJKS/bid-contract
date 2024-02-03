@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@truffle/hdwallet-provider": "^2.1.15",
+    "bootstrap": "^5.3.2",
     "chai": "^4.3.10",
+    "dotenv": "^16.4.1",
     "fs-extra": "^11.1.1",
     "ganache": "^7.9.1",
     "mocha": "^10.2.0",

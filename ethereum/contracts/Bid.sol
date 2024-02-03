@@ -26,7 +26,7 @@ contract Challenge {
     address public owner; 
 
     constructor() {
-        maxTime = block.timestamp + 20 seconds;
+        maxTime = block.timestamp + 2 minutes;
         owner = msg.sender;
     }
 

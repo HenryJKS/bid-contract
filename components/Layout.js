@@ -1,5 +1,5 @@
 import React from "react";
-import { Container } from "semantic-ui-react"
+import { Container, Image } from "semantic-ui-react"
 import Navbar from "./Navbar";
 import Head from "next/head";
 
