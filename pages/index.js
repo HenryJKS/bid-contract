@@ -14,7 +14,7 @@ import Layout from "../components/Layout";
 import WalletButton from "../components/ButtonWeb3";
 import { web3 } from "../components/ButtonWeb3";
 import { Router } from "../routes";
-import { getRedirectError } from "next/dist/client/components/redirect";
+
 
 class bidIndex extends Component {
   state = {
@@ -24,7 +24,8 @@ class bidIndex extends Component {
     errorMessageTransfer: "",
     loadingButtonTransfer: false,
     successTransfer: "",
-    successBid: ""
+    successBid: "",
+    balance: true,
   };
 
   static async getInitialProps(props) {
@@ -40,6 +41,17 @@ class bidIndex extends Component {
     const humanTime = new Date(time * 1000).toLocaleString();
 
     return { addressOwner, humanTime, balanceContractETH };
+  }
+
+  verifyBalance = async () => { 
+    const bidToken = bid(this.props.address);
+    const balanceContract = await web3.eth.getBalance(bidToken.options.address);
+    const balanceContractETH = web3.utils.fromWei(balanceContract, "ether");
+    if (balanceContractETH == 0) {
+      this.setState({ balance: true });
+    } else {
+      this.setState({ balance: false });
+    }
   }
 
   onSubmit = async (event) => {
@@ -147,7 +159,7 @@ class bidIndex extends Component {
               content="Obrigado por participar!"
               actions={["OK"]}
               onActionClick={() => this.setState({ successBid: "" })}
-              size="small"
+              size="tiny"
               style={{color: "green"}}
             />
           </FormField>
@@ -162,14 +174,17 @@ class bidIndex extends Component {
           </FormField>
         </Form>
         <Divider horizontal>Winner</Divider>
-        <Form onClick={this.onSubmitTransfer} error={!!this.state.errorMessageTransfer}>
+        <Form error={!!this.state.errorMessageTransfer}>
           <FormField>
             <Button
               type="submit"
+              onClick={this.onSubmitTransfer} 
               className="ui button primary"
               loading={this.state.loadingButtonTransfer}
-              content="Transferir"
-            />
+              disabled={this.state.balance}
+              style={{width: 'auto'}}>
+              Transferir
+            </Button>
           </FormField>
           <FormField>
             <Message
@@ -186,7 +201,7 @@ class bidIndex extends Component {
               content="O vencedor recebeu o valor do lance."
               actions={["OK"]}
               onActionClick={() => this.setState({ successTransfer: "" })}
-              size="small"
+              size="tiny"
               style={{color: "green"}}
             />
           </FormField>
