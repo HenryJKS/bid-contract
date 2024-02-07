@@ -22,7 +22,7 @@ contract Challenge {
 
     uint public maxTime;
     event eventHigher(address, uint);
-    event auctionEnding(address, uint);
+    event auctionEnding(address winner, uint value);
     address public owner; 
 
     constructor() {
@@ -32,6 +32,12 @@ contract Challenge {
 
     modifier onlyOwner() {
         require(msg.sender == owner);
+
+        _;
+    }
+
+    modifier restart() {
+        require(block.timestamp > maxTime, "Esperando finalizar o leilao");
 
         _;
     }
@@ -62,9 +68,17 @@ contract Challenge {
         if(block.timestamp > maxTime) {
             payable(hb.addressHigh).transfer(address(this).balance);
             emit auctionEnding(hb.addressHigh, hb.amountHigh);
+        } else if(address(this).balance == 0) {
+            revert("Sem saldo do contrato");
         } else {
             revert("O Leilao nao finalizou");
         }
+    }
+
+    function restartBid() public onlyOwner restart {
+        require(address(this).balance == 0);
+        delete hb;
+        maxTime = block.timestamp + 2 minutes;
     }
 
 }

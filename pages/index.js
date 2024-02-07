@@ -1,13 +1,7 @@
 import React from "react";
 import { Component } from "react";
 import {
-  Message,
-  MessageHeader,
-  Form,
-  FormField,
-  Divider,
-  Button,
-  Modal
+  Message, MessageHeader, Form, FormField, Divider, Button, Modal, List, ListContent, ListHeader, ListDescription, ListItem, ListIcon
 } from "semantic-ui-react";
 import bid from "../ethereum/bid";
 import Layout from "../components/Layout";
@@ -25,7 +19,6 @@ class bidIndex extends Component {
     loadingButtonTransfer: false,
     successTransfer: "",
     successBid: "",
-    balance: true,
   };
 
   static async getInitialProps(props) {
@@ -40,18 +33,15 @@ class bidIndex extends Component {
     // convert unix to local time
     const humanTime = new Date(time * 1000).toLocaleString();
 
-    return { addressOwner, humanTime, balanceContractETH };
-  }
+    // return winner
+    const events = await bidToken.getPastEvents("auctionEnding", {
+      fromBlock: 0,
+      toBlock: "latest"
+    });
 
-  verifyBalance = async () => { 
-    const bidToken = bid(this.props.address);
-    const balanceContract = await web3.eth.getBalance(bidToken.options.address);
-    const balanceContractETH = web3.utils.fromWei(balanceContract, "ether");
-    if (balanceContractETH == 0) {
-      this.setState({ balance: true });
-    } else {
-      this.setState({ balance: false });
-    }
+    const eventWinner = events[events.length - 1].returnValues;
+
+    return { addressOwner, humanTime, balanceContractETH, eventWinner };
   }
 
   onSubmit = async (event) => {
@@ -60,15 +50,15 @@ class bidIndex extends Component {
     const bidToken = bid(this.props.address);
     const accounts = await web3.eth.getAccounts();
 
-    this.setState({ loadingButton: true, errorMessage: ""});
+    this.setState({ loadingButton: true, errorMessage: "" });
     try {
       await bidToken.methods.Bid().send({
         from: accounts[0],
         value: web3.utils.toWei(this.state.quantityETH, "ether"),
       });
-      this.setState({ loadingButton: false})
+      this.setState({ loadingButton: false })
       Router.pushRoute("/");
-      this.setState({ successBid: "Lance realizado com sucesso!"});
+      this.setState({ successBid: "Lance realizado com sucesso!" });
     } catch (error) {
       if (error.message.includes("revert")) {
         this.setState({
@@ -76,7 +66,7 @@ class bidIndex extends Component {
           errorMessage: error.message.split("revert")[1].trim(),
         });
       } else {
-        this.setState({ loadingButton: false, errorMessage: error.message});
+        this.setState({ loadingButton: false, errorMessage: error.message });
       }
     }
   };
@@ -87,14 +77,14 @@ class bidIndex extends Component {
     const bidToken = bid(this.props.address);
     const accounts = await web3.eth.getAccounts();
 
-    this.setState({ loadingButtonTransfer: true, errorMessage: ""});
+    this.setState({ loadingButtonTransfer: true, errorMessage: "" });
     try {
       await bidToken.methods.Tranferfunds().send({
         from: accounts[0],
       });
-      this.setState({ loadingButtonTransfer: false})
+      this.setState({ loadingButtonTransfer: false })
       Router.pushRoute("/");
-      this.setState({ successTransfer: "Transferência realizada com sucesso!"});
+      this.setState({ successTransfer: "Transferência realizada com sucesso!" });
     } catch (error) {
       if (error.message.includes("revert")) {
         this.setState({
@@ -109,6 +99,37 @@ class bidIndex extends Component {
       }
     }
   };
+
+  renderList() {
+    const {
+      eventWinner
+    } = this.props;
+
+    if (!eventWinner || eventWinner.value == 0) {
+      return (
+        <Message compact info>
+          <MessageHeader>Vencedor</MessageHeader>
+          <p>Nenhum vencedor ainda</p>
+        </Message>
+      );
+    } else {
+      return (
+        <List style={{ display: 'flex', justifyContent: 'center' }}>
+          <ListItem>
+            <ListIcon name='winner' size='big' verticalAlign='middle' color="blue" />
+            <ListContent>
+              <ListHeader>
+                Address: <a href={`https://sepolia.etherscan.io/address/${eventWinner.winner}`}>{eventWinner.winner}</a>
+              </ListHeader>
+              <ListHeader>
+                Balance: {eventWinner.value} ETH
+              </ListHeader>
+            </ListContent>
+          </ListItem>
+        </List>
+      );
+    }
+  }
 
   render() {
     return (
@@ -160,7 +181,7 @@ class bidIndex extends Component {
               actions={["OK"]}
               onActionClick={() => this.setState({ successBid: "" })}
               size="tiny"
-              style={{color: "green"}}
+              style={{ color: "green" }}
             />
           </FormField>
           <FormField>
@@ -178,11 +199,11 @@ class bidIndex extends Component {
           <FormField>
             <Button
               type="submit"
-              onClick={this.onSubmitTransfer} 
+              onClick={this.onSubmitTransfer}
               className="ui button primary"
               loading={this.state.loadingButtonTransfer}
-              disabled={this.state.balance}
-              style={{width: 'auto'}}>
+              disabled={this.props.balanceContractETH == 0}
+              style={{ width: 'auto' }}>
               Transferir
             </Button>
           </FormField>
@@ -195,6 +216,9 @@ class bidIndex extends Component {
             />
           </FormField>
           <FormField>
+            {this.renderList()}
+          </FormField>
+          <FormField>
             <Modal
               open={!!this.state.successTransfer}
               header="Transferência realizada com sucesso!"
@@ -202,7 +226,7 @@ class bidIndex extends Component {
               actions={["OK"]}
               onActionClick={() => this.setState({ successTransfer: "" })}
               size="tiny"
-              style={{color: "green"}}
+              style={{ color: "green" }}
             />
           </FormField>
         </Form>
