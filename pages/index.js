@@ -19,6 +19,8 @@ class bidIndex extends Component {
     loadingButtonTransfer: false,
     successTransfer: "",
     successBid: "",
+    valueEvent: [],
+    addressEvent: []
   };
 
   static async getInitialProps(props) {
@@ -33,15 +35,7 @@ class bidIndex extends Component {
     // convert unix to local time
     const humanTime = new Date(time * 1000).toLocaleString();
 
-    // return winner
-    const events = await bidToken.getPastEvents("auctionEnding", {
-      fromBlock: 0,
-      toBlock: "latest"
-    });
-
-    const eventWinner = events[events.length - 1].returnValues;
-
-    return { addressOwner, humanTime, balanceContractETH, eventWinner };
+    return { addressOwner, humanTime, balanceContractETH};
   }
 
   onSubmit = async (event) => {
@@ -77,12 +71,12 @@ class bidIndex extends Component {
     const bidToken = bid(this.props.address);
     const accounts = await web3.eth.getAccounts();
 
-    this.setState({ loadingButtonTransfer: true, errorMessage: "" });
+    this.setState({ loadingButtonTransfer: true, errorMessageTransfer: "" });
     try {
       await bidToken.methods.Tranferfunds().send({
         from: accounts[0],
       });
-      this.setState({ loadingButtonTransfer: false })
+      this.setState({ loadingButtonTransfer: false, errorMessageTransfer: ""})
       Router.pushRoute("/");
       this.setState({ successTransfer: "Transferência realizada com sucesso!" });
     } catch (error) {
@@ -100,16 +94,14 @@ class bidIndex extends Component {
     }
   };
 
-  renderList() {
-    const {
-      eventWinner
-    } = this.props;
+  renderList = () => {
+    const { eventsAddress, eventsValue } = this.state;
 
-    if (!eventWinner || eventWinner.value == 0) {
+    if (eventsValue == 0 || eventsValue == undefined) {
       return (
         <Message compact info>
           <MessageHeader>Vencedor</MessageHeader>
-          <p>Nenhum vencedor ainda</p>
+          <p>Aguardando Vencedor</p>
         </Message>
       );
     } else {
@@ -119,10 +111,10 @@ class bidIndex extends Component {
             <ListIcon name='winner' size='big' verticalAlign='middle' color="blue" />
             <ListContent>
               <ListHeader>
-                Address: <a href={`https://sepolia.etherscan.io/address/${eventWinner.winner}`}>{eventWinner.winner}</a>
+                Address: <a href={`https://sepolia.etherscan.io/address/${eventsAddress}`}>{eventsAddress[0]}</a>
               </ListHeader>
               <ListHeader>
-                Balance: {eventWinner.value} ETH
+                Balance: {web3.utils.fromWei(String(eventsValue), 'ether')} ETH
               </ListHeader>
             </ListContent>
           </ListItem>
