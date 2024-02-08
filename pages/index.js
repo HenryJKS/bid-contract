@@ -1,13 +1,14 @@
 import React from "react";
 import { Component } from "react";
 import {
-  Message, MessageHeader, Form, FormField, Divider, Button, Modal, List, ListContent, ListHeader, ListDescription, ListItem, ListIcon
+  Container, Message, MessageHeader, Form, FormField, Divider, Button, Modal, List, ListContent, ListHeader, ListDescription, ListItem, ListIcon
 } from "semantic-ui-react";
 import bid from "../ethereum/bid";
 import Layout from "../components/Layout";
 import WalletButton from "../components/ButtonWeb3";
 import { web3 } from "../components/ButtonWeb3";
 import { Router } from "../routes";
+import ButtonRestartBid from "../components/ButtonRestartBid";
 
 
 class bidIndex extends Component {
@@ -19,8 +20,8 @@ class bidIndex extends Component {
     loadingButtonTransfer: false,
     successTransfer: "",
     successBid: "",
-    valueEvent: [],
-    addressEvent: []
+    addressEvent: "",
+    valueEvent: ""
   };
 
   static async getInitialProps(props) {
@@ -35,7 +36,7 @@ class bidIndex extends Component {
     // convert unix to local time
     const humanTime = new Date(time * 1000).toLocaleString();
 
-    return { addressOwner, humanTime, balanceContractETH};
+    return { address: props.query.address, addressOwner, humanTime, balanceContractETH };
   }
 
   onSubmit = async (event) => {
@@ -65,6 +66,25 @@ class bidIndex extends Component {
     }
   };
 
+  async fetchEvent() {
+    const bidToken = bid(this.props.address);
+
+    const events = await bidToken.getPastEvents("auctionEnding", {
+      "fromBlock": 0,
+      "toBlock": "latest"
+    })
+
+    // buscar o ultimo valor da lista de eventos
+    const addressEvent = events[events.length - 1].returnValues[0];
+    const valueEvent = events[events.length - 1].returnValues[1];
+
+    this.setState({ addressEvent, valueEvent });
+  }
+
+  async componentDidMount() {
+    this.fetchEvent();
+  }
+
   onSubmitTransfer = async (event) => {
     event.preventDefault();
 
@@ -76,7 +96,8 @@ class bidIndex extends Component {
       await bidToken.methods.Tranferfunds().send({
         from: accounts[0],
       });
-      this.setState({ loadingButtonTransfer: false, errorMessageTransfer: ""})
+      this.setState({ loadingButtonTransfer: false, errorMessageTransfer: "" })
+      this.fetchEvent();
       Router.pushRoute("/");
       this.setState({ successTransfer: "Transferência realizada com sucesso!" });
     } catch (error) {
@@ -94,27 +115,30 @@ class bidIndex extends Component {
     }
   };
 
-  renderList = () => {
-    const { eventsAddress, eventsValue } = this.state;
-
-    if (eventsValue == 0 || eventsValue == undefined) {
+  renderList() {
+    if (this.state.addressEvent.length == 0 || this.state.valueEvent.length == 0) {
       return (
-        <Message compact info>
-          <MessageHeader>Vencedor</MessageHeader>
-          <p>Aguardando Vencedor</p>
-        </Message>
+        <List style={{ display: 'flex', justifyContent: 'center' }}>
+          <ListItem>
+            <ListContent>
+              <ListHeader>
+                Aguardando Vencedor
+              </ListHeader>
+            </ListContent>
+          </ListItem>
+        </List>
       );
     } else {
       return (
-        <List style={{ display: 'flex', justifyContent: 'center' }}>
+        <List style={{ display: 'flex', justifyContent: 'center'}}>
           <ListItem>
             <ListIcon name='winner' size='big' verticalAlign='middle' color="blue" />
             <ListContent>
               <ListHeader>
-                Address: <a href={`https://sepolia.etherscan.io/address/${eventsAddress}`}>{eventsAddress[0]}</a>
+                Address: <a href={`https://sepolia.etherscan.io/address/${this.state.addressEvent}`}>{this.state.addressEvent}</a>
               </ListHeader>
               <ListHeader>
-                Balance: {web3.utils.fromWei(String(eventsValue), 'ether')} ETH
+                Value: {web3.utils.fromWei(String(this.state.valueEvent), 'ether')} ETH
               </ListHeader>
             </ListContent>
           </ListItem>
@@ -126,102 +150,107 @@ class bidIndex extends Component {
   render() {
     return (
       <Layout>
-        <WalletButton />
+        <Container fluid={false}>
+          <WalletButton />
 
-        <Message compact style={{ marginRight: "2%" }}>
-          <MessageHeader>Owner Address</MessageHeader>
-          <p>{this.props.addressOwner}</p>
-        </Message>
+          <Message compact style={{ marginRight: "2%" }}>
+            <MessageHeader>Owner Address</MessageHeader>
+            <p>{this.props.addressOwner}</p>
+          </Message>
 
-        <Message compact info>
-          <MessageHeader>Tempo Limite</MessageHeader>
-          <p>{this.props.humanTime}</p>
-        </Message>
+          <ButtonRestartBid/>
 
-        <Divider horizontal>Bid</Divider>
+          <Message compact info>
+            <MessageHeader>Tempo Limite</MessageHeader>
+            <p>{this.props.humanTime}</p>
+          </Message>
 
-        <Message compact info>
-          <MessageHeader>Lance Atual</MessageHeader>
-          <p>{this.props.balanceContractETH} ETH</p>
-        </Message>
 
-        <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
-          <FormField>
-            <label>Valor do Lance</label>
-            <input
-              placeholder="Quantity"
-              value={this.state.quantityETH}
-              onChange={(event) =>
-                this.setState({ quantityETH: event.target.value })
-              }
-              type="number"
-            />
-          </FormField>
-          <FormField>
-            <Message
-              header="Error"
-              compact
-              error
-              content={this.state.errorMessage}
-            />
-          </FormField>
-          <FormField>
-            <Modal
-              open={!!this.state.successBid}
-              header="Lance realizado com sucesso!"
-              content="Obrigado por participar!"
-              actions={["OK"]}
-              onActionClick={() => this.setState({ successBid: "" })}
-              size="tiny"
-              style={{ color: "green" }}
-            />
-          </FormField>
-          <FormField>
-            <Button
-              type="submit"
-              className="ui button primary"
-              loading={this.state.loadingButton}
-            >
-              Enviar
-            </Button>
-          </FormField>
-        </Form>
-        <Divider horizontal>Winner</Divider>
-        <Form error={!!this.state.errorMessageTransfer}>
-          <FormField>
-            <Button
-              type="submit"
-              onClick={this.onSubmitTransfer}
-              className="ui button primary"
-              loading={this.state.loadingButtonTransfer}
-              disabled={this.props.balanceContractETH == 0}
-              style={{ width: 'auto' }}>
-              Transferir
-            </Button>
-          </FormField>
-          <FormField>
-            <Message
-              header="Error"
-              compact
-              error
-              content={this.state.errorMessageTransfer}
-            />
-          </FormField>
-          <FormField>
-            {this.renderList()}
-          </FormField>
-          <FormField>
-            <Modal
-              open={!!this.state.successTransfer}
-              header="Transferência realizada com sucesso!"
-              content="O vencedor recebeu o valor do lance."
-              actions={["OK"]}
-              onActionClick={() => this.setState({ successTransfer: "" })}
-              size="tiny"
-              style={{ color: "green" }}
-            />
-          </FormField>
-        </Form>
+          <Divider horizontal>Bid</Divider>
+
+          <Message compact info>
+            <MessageHeader>Lance Atual</MessageHeader>
+            <p>{this.props.balanceContractETH} ETH</p>
+          </Message>
+
+          <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
+            <FormField>
+              <label>Valor do Lance</label>
+              <input
+                placeholder="Quantity"
+                value={this.state.quantityETH}
+                onChange={(event) =>
+                  this.setState({ quantityETH: event.target.value })
+                }
+                type="number"
+              />
+            </FormField>
+            <FormField>
+              <Message
+                header="Error"
+                compact
+                error
+                content={this.state.errorMessage}
+              />
+            </FormField>
+            <FormField>
+              <Modal
+                open={!!this.state.successBid}
+                header="Lance realizado com sucesso!"
+                content="Obrigado por participar!"
+                actions={["OK"]}
+                onActionClick={() => this.setState({ successBid: "" })}
+                size="tiny"
+                style={{ color: "green" }}
+              />
+            </FormField>
+            <FormField>
+              <Button
+                type="submit"
+                className="ui button primary"
+                loading={this.state.loadingButton}
+              >
+                Enviar
+              </Button>
+            </FormField>
+          </Form>
+          <Divider horizontal>Last Winner</Divider>
+          <Form error={!!this.state.errorMessageTransfer}>
+            <FormField>
+              <Button
+                type="submit"
+                onClick={this.onSubmitTransfer}
+                className="ui button primary"
+                loading={this.state.loadingButtonTransfer}
+                disabled={this.props.balanceContractETH == 0}
+                style={{ width: 'auto' }}>
+                Transferir
+              </Button>
+            </FormField>
+            <FormField>
+              <Message
+                header="Error"
+                compact
+                error
+                content={this.state.errorMessageTransfer}
+              />
+            </FormField>
+            <FormField>
+              {this.renderList()}
+            </FormField>
+            <FormField>
+              <Modal
+                open={!!this.state.successTransfer}
+                header="Transferência realizada com sucesso!"
+                content="O vencedor recebeu o valor do lance."
+                actions={["OK"]}
+                onActionClick={() => this.setState({ successTransfer: "" })}
+                size="tiny"
+                style={{ color: "green" }}
+              />
+            </FormField>
+          </Form>
+        </Container>
       </Layout>
     );
   }

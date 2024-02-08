@@ -2,7 +2,7 @@ import {web3} from '../components/ButtonWeb3';
 import Challenge from './build/Challenge.json';
 
 const bid = (address) => {
-    return new web3.eth.Contract(Challenge.abi, "0x85a78AFEC67cC0d19C66B7fe04c7cAA8F7f20011")
+    return new web3.eth.Contract(Challenge.abi, "0x67986f88D23De9aB1dFC2d5619FaEf29680F4Ea3")
 }
 
 export default bid;
