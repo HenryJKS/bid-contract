@@ -1,27 +1,7 @@
-Leilão com Next.js
+# Leilão com Next.js
 Este é um caso de uso de leilão implementado usando Next.js, uma estrutura de desenvolvimento React para construir aplicativos da web full-stack. Neste README, vou explicar os principais componentes do projeto e como você pode executá-lo.
 
-Pré-requisitos
-Antes de começar, certifique-se de ter o seguinte instalado:
-
-Node.js (versão 12 ou superior)
-npm ou Yarn
-Configuração
-Clone este repositório:
-
-git clone https://github.com/seu-usuario/leilao-nextjs.git
-
-Navegue até o diretório do projeto:
-
-cd leilao-nextjs
-
-Instale as dependências:
-
-npm install
-# ou
-yarn install
-
-Funcionalidades
+# Funcionalidades
 1. Leilão
 O contrato Challenge.sol implementa a lógica do leilão. Aqui estão os principais pontos:
 
@@ -40,13 +20,5 @@ Componente de contador (components/Countdown.js): Mostra o tempo restante até o
 Executando o Projeto
 Inicie o servidor de desenvolvimento:
 
-npm run dev
-# ou
-yarn dev
-
-Abra http://localhost:3000 no seu navegador.
-
 Licença
 Este projeto está licenciado sob a Licença MIT.
-
-Feito com ❤️ por Seu Nome
